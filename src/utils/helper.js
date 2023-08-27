@@ -10,11 +10,19 @@ const showToast = (text, type = "success") => {
 		},
 	});
 };
+
+const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
+	var ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight);
+	return { width: parseInt(srcWidth*ratio), height: parseInt(srcHeight*ratio) };
+};
+
 const helper = {
 	width,
 	height,
 	showToast,
-	errorText: "Something went wrong!"
+	calculateAspectRatioFit,
+	errorText: "Something went wrong!",
+	reloadPage: "Please reload page!"
 };
 
 export default helper;

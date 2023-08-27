@@ -3,11 +3,12 @@ import {
 	View
 } from "react-native";
 import style from "./style";
-import {  heightHalf, widthHalf } from "./constants";
+import constants from "./constants";
 
 export default class Four extends Component {
 	render(){
 		const streams = this.props?.streams || [];
+		const {  heightHalf, widthHalf } = constants(this.props.small);
 		return (
 			<View style={style.row}>
 				<View>

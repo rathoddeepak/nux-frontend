@@ -4,12 +4,12 @@ import {
   Route
 } from "react-router-dom";
 
-const Station = () => {
+const Framer = () => {
 	return (
 		<Routes>
-	        <Route path="/:station_id" element={<Main />} />
+	        <Route path="/:stream_id" element={<Main />} />
 	    </Routes>
 	)
 }
 
-export default Station;
+export default Framer;

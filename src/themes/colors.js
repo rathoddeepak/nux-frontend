@@ -6,7 +6,10 @@ const colors = {
 	primary: "#508CFF",
 	buttonTxt: "#000000",
 	borderColor: "#505050",
-	white: "#ffffff"
+	white: "#ffffff",
+	green: "#4caf50",
+	red: "#f44336",
+	ylw: "yellow"
 }
 
 export default colors;

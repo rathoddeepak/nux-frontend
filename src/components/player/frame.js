@@ -1,15 +1,19 @@
 import React, { Component } from "react";
-import { View, Text, Pressable } from "react-native";
-import StreamCore from "../../libs/streamCore";
-import LB from "../../backend/local";
+import { View, Text, Pressable, Image } from "react-native";
 import colors from "../../themes/colors";
 import FeatherIcons from "feather-icons-react";
 import EmojiPeopleIcon from "@mui/icons-material/EmojiPeople";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
 import DirectionsBikeIcon from "@mui/icons-material/DirectionsBike";
 import helper from "../../utils/helper";
+import { STATIC_URL } from "../../utils/constants";
+import moment from "moment";
 
-export default class StreamPlayer extends Component {
+const getURL = (frameId, streamId) => {
+	return `${STATIC_URL}nuxframes/${streamId}/${frameId}frame.jpg`;
+};
+
+export default class FrameView extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -17,58 +21,76 @@ export default class StreamPlayer extends Component {
 			height: 0,
 			hasObjects: false,
 			objects: [],
+			url: "",
+			timeTxt: ""
 		};
 		this.drawCtx = null;
 		this.isWriterSet = false;
 	}
+
 	componentDidMount() {
-		const { id } = this.props.data || {};
+		const { id, objects, streamId, width, height, createdAt } =
+			this.props?.data?.frame || {};
 		if (id) {
 			this.drawCtx = this.drawCanvas.getContext("2d");
-			this.loadStream(id);
+			const url = getURL(id, streamId);
+			const time = moment(createdAt);
+			const dateTxt = time.format("DD MMM YYYY");
+			const timeTxt = time.format("hh:mm:ss a");
+			this.setState(
+				{
+					url,
+					timeTxt: `| ${dateTxt} at ${timeTxt}`
+				},
+				() => {
+					this.drawBoxes(objects, width, height);
+				}
+			);
 		}
 	}
 
-	loadStream = () => {
-		const { id } = this.props.data || {};
-		const uuid = LB.Stream.uuid(id);
-		StreamCore.updateStreamPlayer(uuid, this.currentPlayer);
-		StreamCore.updateStreamDetectionCallback(uuid, this.drawBoxes);
-	};
-
-	stopStream = () => {
-		const { id } = this.props.data || {};
-		this.currentPlayer.srcObject = null;
-		const uuid = LB.Stream.uuid(id);
-		StreamCore.updateStreamPlayer(uuid, null);
-		StreamCore.updateStreamDetectionCallback(uuid, null);
-	};
-
-	componentWillUnmount() {
-		const { id } = this.props.data || {};
-		const uuid = LB.Stream.uuid(id);
-		this.currentPlayer.srcObject = null;
-		StreamCore.updateStreamPlayer(uuid, null);
-		StreamCore.updateStreamDetectionCallback(uuid, null);
+	componentDidUpdate(prevProps) {
+		//Typical usage, don't forget to compare the props
+		const prevId = prevProps?.data?.frame?.id;
+		const newId = this.props?.data?.frame?.id;
+		if (newId !== prevId) {
+			const { id, streamId, objects, createdAt, width, height } =
+				this.props?.data?.frame || {};
+			if (objects) {
+				const url = getURL(id, streamId);
+				const time = moment(createdAt);
+				const dateTxt = time.format("DD MMM YYYY");
+				const timeTxt = time.format("hh:mm:ss a");
+				this.setState(
+					{
+						url,
+						timeTxt: `| ${dateTxt} at ${timeTxt}`
+					},
+					() => {
+						this.drawBoxes(objects, width, height);
+					}
+				);
+			}
+		}
 	}
 
-	drawBoxes = ({ objects, width, height }) => {
+	drawBoxes = (objects, width, height) => {
 		//clear the previous drawings
-
 		const arDim = helper.calculateAspectRatioFit(
 			width,
 			height,
 			this.props.width,
 			this.props.height
 		);
-
-		this.drawCanvas.width = arDim.width;
-		this.drawCanvas.height = arDim.height;
-		//Some styles for the drawcanvas
-		this.drawCtx.lineWidth = 2;
-		this.drawCtx.strokeStyle = "cyan";
-		this.drawCtx.font = "20px Verdana";
-		this.drawCtx.fillStyle = "cyan";
+		if (this.isWriterSet === false) {
+			this.drawCanvas.width = arDim.width;
+			this.drawCanvas.height = arDim.height;
+			//Some styles for the drawcanvas
+			this.drawCtx.lineWidth = 2;
+			this.drawCtx.strokeStyle = "cyan";
+			this.drawCtx.font = "20px Verdana";
+			this.drawCtx.fillStyle = "cyan";
+		}
 		this.drawCtx.clearRect(
 			0,
 			0,
@@ -90,8 +112,8 @@ export default class StreamPlayer extends Component {
 			const coords = object.coord;
 			let x = coords[0] * this.drawCanvas.width;
 			let y = coords[1] * this.drawCanvas.height;
-			let boxWidth = coords[2] * this.drawCanvas.width - x;
-			let boxHeight = coords[3] * this.drawCanvas.height - y;
+			let width = coords[2] * this.drawCanvas.width - x;
+			let height = coords[3] * this.drawCanvas.height - y;
 			if (aggregateClasses[object.name] !== undefined) {
 				aggregateClasses[object.name] += 1;
 			}
@@ -102,7 +124,7 @@ export default class StreamPlayer extends Component {
 			// }
 
 			this.drawCtx.fillText(object.name, x + 5, y + 20);
-			this.drawCtx.strokeRect(x, y, boxWidth, boxHeight);
+			this.drawCtx.strokeRect(x, y, width, height);
 		});
 
 		for (let objectKey of Object.keys(aggregateClasses)) {
@@ -144,16 +166,13 @@ export default class StreamPlayer extends Component {
 		);
 	};
 	render() {
-		const { width, height, data, onEdit, onPress } = this.props;
+		const { width, height, data, onPress } = this.props;
 		return (
 			<View style={[style.main, { width, height }]}>
-				<video
-					ref={(ref) => (this.currentPlayer = ref)}
-					autoPlay
-					controls={false}
-					muted
-					playsInline
-					style={style.video}
+				<Image
+					source={{ uri: this.state.url }}
+					resizeMode="contain"
+					style={style.image}
 				/>
 				<canvas
 					style={style.canvas}
@@ -161,17 +180,12 @@ export default class StreamPlayer extends Component {
 				/>
 				<View style={style.controls}>
 					<View style={style.camNameCover}>
-						<Text style={style.camName}>{data.name}</Text>
+						<Text style={style.camName}>
+							{data.name} {this.state.timeTxt}
+						</Text>
 					</View>
 
 					<View style={style.camEditCover}>
-						<Pressable onPress={onEdit} style={style.camEditButton}>
-							<FeatherIcons
-								color={colors.white}
-								size={18}
-								icon="edit-2"
-							/>
-						</Pressable>
 						<Pressable
 							onPress={onPress}
 							style={style.camEditButton}
@@ -199,7 +213,7 @@ const style = {
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	video: {
+	image: {
 		width: "100%",
 		height: "100%",
 	},
@@ -216,7 +230,7 @@ const style = {
 	camName: {
 		color: colors.white,
 		fontWeight: "bold",
-		fontSize: 15,
+		fontSize: 13,
 	},
 	camNameCover: {
 		paddingLeft: 10,

@@ -1,12 +1,29 @@
 import helper from "../../../utils/helper";
-const cHeight = helper.height - 100;
 
-export const height = cHeight;
-export const heightHalf = cHeight / 2;
-export const heightThird = cHeight / 3;
-export const heightMore = cHeight - heightThird;
+const constants = (isSmall = false) => {
+	const hhheight = isSmall ? 210 : helper.height;
+	const wwwidth = isSmall ? 210 : helper.width;
+	const cHeight = hhheight - 100;
 
-export const width = helper.width;
-export const widthHalf = helper.width / 2;
-export const widthThird = helper.width / 3;
-export const widthMore = helper.width - widthThird;
+	const height = cHeight;
+	const heightHalf = cHeight / 2;
+	const heightThird = cHeight / 3;
+	const heightMore = cHeight - heightThird;
+
+	const width = wwwidth;
+	const widthHalf = wwwidth / 2;
+	const widthThird = wwwidth / 3;
+	const widthMore = wwwidth - widthThird;
+
+	return {
+		height,
+		heightHalf,
+		heightThird,
+		heightMore,
+		width,
+		widthHalf,
+		widthThird,
+		widthMore,
+	}
+}
+export default constants;

@@ -1,23 +1,31 @@
+import { API_URL } from "../utils/constants";
+
 class Stream {
 	constructor(streamId) {
 		this.uuid = streamId;
+		this.streamId = this.uuid.replace("stream_", "");
 		this.webrtc = null;
 		this.webrtcSendChannel = null;
 		this.mediaStream = null;
 
-		this.apiServer = "http://localhost:3301/detect";
+		this.apiServer = `${API_URL}detection/detect_save`;
 
 		this.currentPlayer = null;
 		this.detectionCallback = null;
 
 		this.mounted = true;
+		this.detectionStarted = false;
 		this.uploadWidth = 240;
 	}
 
 	unmount = () => {
 		this.mounted = false;
-		this.removePlayer();
-		this.removeDetectionCallback();
+	}
+
+	clean = () => {
+		this.webrtc = null;
+		this.webrtcSendChannel = null;
+		this.mediaStream = null;
 	}
 
 	addPlayer = (playerRef) => {
@@ -25,7 +33,6 @@ class Stream {
 		if(playerRef){
 			this.currentPlayer = playerRef;
 			this.currentPlayer.srcObject = this.mediaStream;
-			console.log(this.playerRef, this.mediaStream);
 		}
 	}
 
@@ -47,7 +54,7 @@ class Stream {
 		this.detectionCallback = null;
 	}
 
-	init = async () => {
+	init = async () => {		
 		this.mediaStream = new MediaStream();		
 		this.webrtc = new RTCPeerConnection({
 			iceServers: [
@@ -129,7 +136,7 @@ class Stream {
 		const url = `${base_url}/stream/${uuid}/channel/${channel}/webrtc?uuid=${uuid}&channel=${channel}`;
 		const offer = await this.webrtc.createOffer();
 		const formData = new FormData();
-		formData.append("data", btoa(this.webrtc.localDescription.sdp));
+		formData.append("data", btoa(this.webrtc.localDescription.sdp));		
 		await this.webrtc.setLocalDescription(offer);
 		fetch(url, {
 			method: "POST",
@@ -190,7 +197,7 @@ class Stream {
 	}
 
 	//Add file blob to a form and post
-	postFile = (file) => {
+	postFile = (file) => {			
 		if(!file){
 			this.retry();
 			return;
@@ -201,16 +208,17 @@ class Stream {
 		//Set options as form data
 		let formData = new FormData();
 		formData.append("image", file);
+		formData.append("streamId", this.streamId);
 		fetch(this.apiServer, {
 			method: "POST",
 			body: formData,
 		})
 		.then((response) => response.json())
-		.then(async (objects) => {
+		.then(async (response) => {
 			//draw the boxes
 			// TODO: callback
 			if(this.detectionCallback){
-				this.detectionCallback(objects);
+				this.detectionCallback(response.data);
 			}
 			setTimeout(async () => {
 				const newFile = await this.getFile();
@@ -224,16 +232,19 @@ class Stream {
 		});
 	};
 
-	startObjectDetection = async () => {
-	    const newFile = await this.getFile();
-	    console.log(newFile);
-	    this.postFile(newFile);
+	startObjectDetection = async (text) => {
+		if(!this.detectionStarted){
+			const newFile = await this.getFile();
+	    	this.postFile(newFile);
+		}
+		this.detectionStarted = true;		   
 	}
 
-	retry = () => {
+	retry = () => {		
 		if(this.mounted){
 			setTimeout(() => {
-				this.startObjectDetection();
+				this.detectionStarted = false;
+				this.startObjectDetection("Test");
 			}, 600);
 		}		
 	}

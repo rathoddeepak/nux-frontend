@@ -5,28 +5,39 @@ import {
 	StyleSheet
 } from "react-native";
 import colors from "../../themes/colors";
-import helper from "../../utils/helper";
 import FeatherIcons from 'feather-icons-react';
 
 export default class Footer extends Component {
 	render(){
+		const {
+			onHomePress,
+			onHubPress,
+			onSettingPress,
+			onLogoutPress
+		} = this.props;
 		return (
 			<View style={style.main}>
-				<Pressable style={style.icon}>
+				<Pressable onPress={onHomePress} style={style.icon}>
 					<FeatherIcons
 						icon={'home'}
 						color={colors.white}
 					/>
 				</Pressable>
-				<Pressable style={style.icon}>
+				<Pressable onPress={onHubPress} style={style.icon}>
 					<FeatherIcons
 						icon={'command'}
 						color={colors.silver}
 					/>
 				</Pressable>
-				<Pressable style={style.icon}>
+{/*				<Pressable onPress={onSettingPress} style={style.icon}>
 					<FeatherIcons
-						icon={'user'}
+						icon={'settings'}
+						color={colors.silver}
+					/>
+				</Pressable>*/}
+				<Pressable onPress={onLogoutPress} style={style.icon}>
+					<FeatherIcons
+						icon={'log-out'}
 						color={colors.silver}
 					/>
 				</Pressable>

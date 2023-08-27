@@ -10,6 +10,11 @@ import FeatherIcons from 'feather-icons-react';
 
 export default class Footer extends Component {
 	render(){
+		const {
+			onCameraPress,
+			onLogoutPress,
+			onSettingPress
+		} = this.props;
 		return (
 			<View style={style.main}>
 				<Pressable style={style.icon}>
@@ -18,15 +23,21 @@ export default class Footer extends Component {
 						color={colors.white}
 					/>
 				</Pressable>
-				<Pressable style={style.icon}>
+				<Pressable  onPress={onCameraPress} style={style.icon}>
 					<FeatherIcons
-						icon={'camera'}
+						icon={'plus-circle'}
 						color={colors.silver}
 					/>
 				</Pressable>
-				<Pressable style={style.icon}>
+				<Pressable  onPress={onSettingPress} style={style.icon}>
 					<FeatherIcons
-						icon={'user'}
+						icon={'settings'}
+						color={colors.silver}
+					/>
+				</Pressable>
+				<Pressable onPress={onLogoutPress} style={style.icon}>
+					<FeatherIcons
+						icon={'log-out'}
 						color={colors.silver}
 					/>
 				</Pressable>

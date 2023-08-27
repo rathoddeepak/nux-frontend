@@ -1,5 +1,7 @@
 import React, { Component } from "react";
 import { View, Text, Pressable, TextInput, ImageBackground } from "react-native";
+import LoadingModal from "../../components/loadingModal";
+import withRouter from "../../components/withRouter";
 import validation from "../../utils/validation";
 import helper from "../../utils/helper";
 import colors from "../../themes/colors";
@@ -21,19 +23,26 @@ const STATION = 1;
 const contentWidth = 350;
 const backgroundImage = "https://images.unsplash.com/photo-1655720406770-12ea329b5b61?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2832&q=80";
 
-export default class Login extends Component {
+class Login extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
 			currentTab: 0,
-			tabData: stationTab,
+			busy: false,
+			tabData: hubTab,
 			input1: "",
 			input2: "",
 		};
 	}
 
 	componentDidMount(){
-		// alert(DB.Account.getStationId())
+		const stationId = DB.Account.getStationId();
+		const hubId = DB.Account.getHubId();
+		if(stationId && stationId !== "0"){
+			this.props.navigate("/station/" + stationId);
+		}else if(hubId && hubId !== "0"){
+			this.props.navigate("/station/" + hubId);
+		}
 	}
 
 	handleTabChange = (currentTab) => {
@@ -63,24 +72,26 @@ export default class Login extends Component {
 				helper.showToast("Please enter valid password", "error");
 				return
 			}
-			let apiFunction = RB.Account.hubLogin;
+			let apiFunction = RB.Hub.login;
 			if(currentTab === STATION){
-				apiFunction = RB.Account.stationLogin;
+				apiFunction = RB.Station.login;
 			}
 			const result = await apiFunction({ id, password });
-			if(!result.success){
+			if(result.success){
 				if(currentTab === HUB){
 					DB.Account.setHubId(result.data.id);
+					this.props.navigate("/hub/" + result.data.id);
 				}else{
-					// DB.Account.setStationId(result.data.id);
-					// TODO: Remove later
-					DB.Account.setStationId(1);
+					DB.Account.setStationId(result.data.id);
+					this.props.navigate("/station/" + result.data.id);
 				}
 				helper.showToast("Loggedin successfully!");
 			}else{
 				throw new Error(result?.message || helper.errorText);
 			}
 		} catch (err) {
+			console.log(err);
+			this.idInput.focus();
 			helper.showToast(err.message, "error");
 		} finally {
 			this.setState({
@@ -105,7 +116,7 @@ export default class Login extends Component {
 	};
 
 	render() {
-		const { tabData } = this.state;
+		const { tabData, busy } = this.state;
 		return (
 			<ImageBackground source={{ uri: backgroundImage }} style={style.main}>
 				<View style={style.content}>
@@ -117,19 +128,28 @@ export default class Login extends Component {
 					<TextInput
 						onChangeText={(input1) => this.setState({ input1 })}
 						style={style.input}
+						ref={ref => this.idInput = ref}
+						onSubmitEditing={() => {
+							this.passInput.focus();
+						}}
 						placeholderTextColor={colors.silver}
 						placeholder={tabData.input1}
 					/>
 					<TextInput
 						onChangeText={(input2) => this.setState({ input2 })}
 						style={style.input}
+						ref={ref => this.passInput = ref}
 						placeholderTextColor={colors.silver}
 						placeholder={tabData.input2}
+						onSubmitEditing={this.handleLogin}
 					/>
 					<Pressable onPress={this.handleLogin} style={style.button}>
 						<Text style={style.buttonText}>Login</Text>
 					</Pressable>
 				</View>
+				<LoadingModal
+					busy={busy}
+				/>
 			</ImageBackground>
 		);
 	}
@@ -209,3 +229,5 @@ const style = {
 		fontWeight: "bold",
 	},
 };
+
+export default withRouter(Login);

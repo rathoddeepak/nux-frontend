@@ -6,18 +6,23 @@ class Streams {
 	}
 
 	addStream = (streamID) => {
-		const streamAdded = this.streams[streamID];
-		if(!streamAdded){
+		const streamAdded = this.streams[streamID];		
+		if(!streamAdded){			
 			this.streams[streamID] = new Stream(streamID);
 			this.streams[streamID].init();
 		}		
 	}
 
+	reloadStream = (streamID) => {
+		this.removeStream(streamID);
+		setTimeout(() => {
+			this.addStream(streamID);
+		}, 500);
+	}
+
 	updateStreamPlayer = (streamID, videoPlayer) => {
-		console.log("Called", streamID, this.streams[streamID]);
 		if(this.streams[streamID]){
 			if(videoPlayer){
-				console.log("Called 1")
 				this.streams[streamID].addPlayer(videoPlayer);
 			}else{
 				this.streams[streamID].removePlayer();
@@ -36,16 +41,17 @@ class Streams {
 	}
 
 	streamUnmount = (streamID) => {
-		if(streams[streamID]){
-			streams[streamID].unmount();
+		if(this.streams[streamID]){
+			this.streams[streamID].unmount();
 		}
 	}
 
 	removeStream = (streamID) => {
-		if(streams[streamID]){
-			streams[streamID].unmount();
+		if(this.streams[streamID]){
+			this.streams[streamID].unmount();
+			this.streams[streamID].clean();
 			setTimeout(() => {
-				streams[streamID] = null;
+				this.streams[streamID] = null;
 			}, 200);
 		}
 	}

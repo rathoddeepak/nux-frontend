@@ -11,7 +11,8 @@ function setStationId(token) {
 
 function getStationId() {
 	try {
-		return getCookie('sid');		
+		const sid = parseInt(getCookie('sid'));
+		return isNaN(sid) ? false : sid;
 	}catch(err){
 		console.log(err);
 		return false;
@@ -38,7 +39,8 @@ function setHubId(token) {
 
 function getHubId() {
 	try {
-		return getCookie('hid');		
+		const hid = parseInt(getCookie('hid'));
+		return isNaN(hid) ? false : hid;	
 	}catch(err){
 		console.log(err);
 		return false;

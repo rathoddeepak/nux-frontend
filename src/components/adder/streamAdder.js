@@ -5,77 +5,100 @@ import validation from "../../utils/validation";
 import colors from "../../themes/colors";
 import helper from "../../utils/helper";
 import RB from "../../backend/remote/";
+import LB from "../../backend/local/";
 const defaultData = {
 	name: "",
-	password: "",
-	id: null,
+	rtspUrl: "rtsp://192.168.41.171:1945",
+	id: undefined,
 	visible: false,
-	busy: false
+	busy: false,
 };
-export default class HubAdder extends Component {
+export default class StreamAdder extends Component {
 	constructor(props) {
 		super(props);
 		this.state = defaultData;
 		this.callback = null;
 	}
 
-	show = (previousData = defaultData, stationId, cb) => {
+	show = (previousData, hubId, cb) => {
 		this.setState({
-			...previousData,
-			stationId,
-			visible: true
+			...(previousData || defaultData),
+			hubId,
+			visible: true,
 		});
 		this.callback = cb;
 	};
 
 	close = () => {
-		if(this.state.busy)return;
-		this.setState({
-			visible: false
-		}, () => {
-			this.callback = null;
-		})
-	}
+		if (this.state.busy) return;
+		this.setState(
+			{
+				visible: false,
+			},
+			() => {
+				this.callback = null;
+			}
+		);
+	};
 
 	handleSubmit = async () => {
 		try {
 			this.setState({
-				busy: true
+				busy: true,
 			});
-			const { id, name, password, stationId } = this.state;
-			if(!validation.validString(name)){
-				helper.showToast(`Please enter valid hub name`, "error");
-				return
+			const { id, name, rtspUrl, hubId } = this.state;
+			if (!validation.validString(name)) {
+				helper.showToast(`Please enter valid camera name`, "error");
+				return;
 			}
-			if(!validation.validString(password)){
-				helper.showToast("Please enter valid password", "error");
-				return
+			if (!validation.validString(rtspUrl)) {
+				helper.showToast("Please enter valid url", "error");
+				return;
 			}
-			const response = await RB.Hub.createHub({ id, name, stationId, password });
-			if(response.success){
+			const response = await RB.Stream.createStream({
+				id,
+				name,
+				hubId,
+				rtspUrl,
+			});
+			if (response.success) {
 				this.callback({
 					id: response.data.id,
 					name,
-					password
+					rtspUrl,
 				});
+				if (id) {
+					const uuid = LB.Stream.uuid(id);
+					LB.Stream.editStream({
+						uuid,
+						name,
+						rtspUrl,
+					});
+				} else {
+					const uuid = LB.Stream.uuid(response.data.id);
+					LB.Stream.addStream({
+						uuid,
+						name,
+						rtspUrl,
+					});
+				}
 				setTimeout(() => {
 					this.close();
 				}, 100);
-			}else{
+			} else {
 				throw new Error(response?.message || helper.errorText);
 			}
 		} catch (err) {
-			helper.showToast(err.message, 'error');
+			helper.showToast(err.message, "error");
 		} finally {
 			this.setState({
-				busy: false
+				busy: false,
 			});
 		}
-	}
-
+	};
 
 	render() {
-		const { id, visible, name, password, busy } = this.state;
+		const { id, visible, name, rtspUrl, busy } = this.state;
 		return (
 			<Modal
 				visible={visible}
@@ -85,7 +108,9 @@ export default class HubAdder extends Component {
 			>
 				<View style={style.main}>
 					<View style={style.content}>
-						<Text style={style.title}>{id ? "Edit" :  "Create"} Hub</Text>
+						<Text style={style.title}>
+							{id ? "Edit" : "Create"} Camera
+						</Text>
 						<TextInput
 							onChangeText={(name) => this.setState({ name })}
 							style={style.input}
@@ -94,28 +119,62 @@ export default class HubAdder extends Component {
 								this.passInput.focus();
 							}}
 							placeholderTextColor={colors.silver}
-							placeholder={"Hub Name"}
+							placeholder={"Camera Name"}
 						/>
 						<TextInput
-							onChangeText={(password) =>
-								this.setState({ password })
+							onChangeText={(rtspUrl) =>
+								this.setState({ rtspUrl })
 							}
-							ref={ref => this.passInput = ref}
+							ref={(ref) => (this.passInput = ref)}
 							onSubmitEditing={this.handleSubmit}
-							value={password}
+							value={rtspUrl}
 							style={style.input}
 							placeholderTextColor={colors.silver}
-							placeholder={"Hub Password"}
+							placeholder={"RTSP URL"}
 						/>
-						<Pressable onPress={this.handleSubmit} style={style.button}>
-							<Text style={style.buttonTxt}>
-								Submit
-							</Text>
+						<Pressable
+							onPress={this.handleSubmit}
+							style={style.button}
+						>
+							<Text style={style.buttonTxt}>Submit</Text>
 						</Pressable>
-						<Pressable onPress={this.close} style={[style.button, style.cancel]}>
-							<Text style={[style.buttonTxt, {
-								color: colors.silver
-							}]}>
+						{id ? (
+							<Pressable
+								onPress={() => {
+									this.close();
+									this.props.onDisablePress(id)
+								}}
+								style={[
+									style.button,
+									{
+										backgroundColor: colors.red,
+									},
+								]}
+							>
+								<Text
+									style={[
+										style.buttonTxt,
+										{
+											color: colors.white,
+										},
+									]}
+								>
+									Disable Stream
+								</Text>
+							</Pressable>
+						) : null}
+						<Pressable
+							onPress={this.close}
+							style={[style.button, style.cancel]}
+						>
+							<Text
+								style={[
+									style.buttonTxt,
+									{
+										color: colors.silver,
+									},
+								]}
+							>
 								Cancel
 							</Text>
 						</Pressable>
@@ -180,6 +239,6 @@ const style = {
 		fontWeight: "bold",
 	},
 	cancel: {
-		backgroundColor: colors.background2
-	}
+		backgroundColor: colors.background2,
+	},
 };

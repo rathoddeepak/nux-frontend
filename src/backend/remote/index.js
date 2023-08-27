@@ -1,7 +1,13 @@
-import * as Account from "./account";
+import * as Analysis from "./analysis";
+import * as Station from "./station";
+import * as Stream from "./stream";
+import * as Hub from "./hub";
 
 const Backend = {
-	Account,
+	Analysis,
+	Station,
+	Stream,
+	Hub
 };
 
 export default Backend;
